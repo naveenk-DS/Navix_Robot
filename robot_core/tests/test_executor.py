@@ -115,3 +115,71 @@ def test_unsafe_move_does_not_update_robot_state():
     assert result.success is False
     assert executor.robot_state.status.value == "idle"
     assert executor.robot_state.position_x == 0.0
+
+
+def test_move_forward_heading_zero():
+    executor = create_executor()
+
+    action = Action(
+        action_type=ActionType.MOVE_FORWARD,
+        value=1.0,
+    )
+
+    executor.robot_state.heading = 0.0
+
+    result = executor.execute(action)
+
+    assert result.success is True
+    assert executor.robot_state.position_x == 1.0
+    assert round(executor.robot_state.position_y, 10) == 0.0
+
+
+def test_move_forward_heading_90():
+    executor = create_executor()
+
+    action = Action(
+        action_type=ActionType.MOVE_FORWARD,
+        value=1.0,
+    )
+
+    executor.robot_state.heading = 90.0
+    
+    result = executor.execute(action)
+
+    assert result.success is True
+    assert round(executor.robot_state.position_x, 10) == 0.0
+    assert executor.robot_state.position_y == 1.0
+
+
+def test_move_forward_heading_180():
+    executor = create_executor()
+
+    action = Action(
+        action_type=ActionType.MOVE_FORWARD,
+        value=1.0,
+    )
+
+    executor.robot_state.heading = 180.0
+
+    result = executor.execute(action)
+
+    assert result.success is True
+    assert executor.robot_state.position_x == -1.0
+    assert round(executor.robot_state.position_y, 10) == 0.0
+
+
+def test_move_forward_heading_270():
+    executor = create_executor()
+
+    action = Action(
+        action_type=ActionType.MOVE_FORWARD,
+        value=1.0,
+    )
+
+    executor.robot_state.heading = 270.0
+
+    result = executor.execute(action)
+
+    assert result.success is True
+    assert round(executor.robot_state.position_x, 10) == 0.0
+    assert executor.robot_state.position_y == -1.0

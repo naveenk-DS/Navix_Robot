@@ -5,6 +5,8 @@ from robot_core.motion import MotionController
 from robot_core.safety import SafetyChecker
 from robot_core.state import RobotState, RobotStatus
 
+import math 
+
 
 @dataclass
 class ExecutionResult:
@@ -35,8 +37,12 @@ class ActionExecutor:
         if action.action_type == ActionType.MOVE_FORWARD:
             self.motion_controller.move_forward(action.value)
 
+            radians = math.radians(self.robot_state.heading)
+
+            self.robot_state.position_x += action.value * math.cos(radians)
+            self.robot_state.position_y += action.value * math.sin(radians)
+
             self.robot_state.status = RobotStatus.MOVING
-            self.robot_state.position_x += action.value
 
             return ExecutionResult(
                 success=True,
