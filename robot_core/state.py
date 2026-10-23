@@ -13,3 +13,4 @@ class RobotState:
     status: RobotStatus = RobotStatus.IDLE
     position_x: float = 0.0
     position_y: float = 0.0
+    heading: float = 0.0
