@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 
 from robot_core.actions import Action, ActionType
+from robot_core.motion import MotionController
+from robot_core.safety import SafetyChecker
 
 
 @dataclass
@@ -10,13 +12,25 @@ class ExecutionResult:
 
 
 class ActionExecutor:
+    def __init__(
+        self,
+        safety_checker: SafetyChecker,
+        motion_controller: MotionController,
+    ) -> None:
+        self.safety_checker = safety_checker
+        self.motion_controller = motion_controller
+
     def execute(self, action: Action) -> ExecutionResult:
+        allowed, safety_message = self.safety_checker.validate(action)
+
+        if not allowed:
+            return ExecutionResult(
+                success=False,
+                message=safety_message,
+            )
+
         if action.action_type == ActionType.MOVE_FORWARD:
-            if action.value <= 0:
-                return ExecutionResult(
-                    success=False,
-                    message="Move distance must be greater than zero.",
-                )
+            self.motion_controller.move_forward(action.value)
 
             return ExecutionResult(
                 success=True,
@@ -24,6 +38,8 @@ class ActionExecutor:
             )
 
         if action.action_type == ActionType.STOP:
+            self.motion_controller.stop()
+
             return ExecutionResult(
                 success=True,
                 message="Robot stopped.",
