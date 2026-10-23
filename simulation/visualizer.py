@@ -178,14 +178,20 @@ def main() -> None:
                     executor.execute(action)
 
                 elif event.key == pygame.K_a or event.key == pygame.K_LEFT:
-                    robot_state.heading = (
-                        robot_state.heading + 15
-                    ) % 360
+                    action = Action(
+                        action_type=ActionType.TURN_LEFT,
+                        value=15.0,
+                    )
+
+                    executor.execute(action)
 
                 elif event.key == pygame.K_d or event.key == pygame.K_RIGHT:
-                    robot_state.heading = (
-                        robot_state.heading - 15
-                    ) % 360
+                    action = Action(
+                        action_type=ActionType.TURN_RIGHT,
+                        value=15.0,
+                    )
+
+                    executor.execute(action)
 
                 elif event.key == pygame.K_SPACE:
                     action = Action(

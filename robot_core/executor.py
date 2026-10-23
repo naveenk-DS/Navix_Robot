@@ -49,6 +49,27 @@ class ActionExecutor:
                 message=f"Moving forward {action.value} meter(s).",
             )
 
+        if action.action_type == ActionType.TURN_LEFT:
+            self.robot_state.heading = (
+                self.robot_state.heading + action.value
+            ) % 360
+
+            return ExecutionResult(
+                success=True,
+                message=f"Turned left {action.value} degree(s).",
+            )
+
+
+        if action.action_type == ActionType.TURN_RIGHT:
+            self.robot_state.heading = (
+                self.robot_state.heading - action.value
+            ) % 360
+
+            return ExecutionResult(
+                success=True,
+                message=f"Turned right {action.value} degree(s).",
+            )
+
         if action.action_type == ActionType.STOP:
             self.motion_controller.stop()
 

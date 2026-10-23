@@ -143,7 +143,7 @@ def test_move_forward_heading_90():
     )
 
     executor.robot_state.heading = 90.0
-    
+
     result = executor.execute(action)
 
     assert result.success is True
@@ -183,3 +183,64 @@ def test_move_forward_heading_270():
     assert result.success is True
     assert round(executor.robot_state.position_x, 10) == 0.0
     assert executor.robot_state.position_y == -1.0
+
+def test_turn_left_updates_heading():
+    executor = create_executor()
+
+    action = Action(
+        action_type=ActionType.TURN_LEFT,
+        value=15.0,
+    )
+
+    result = executor.execute(action)
+
+    assert result.success is True
+    assert result.message == "Turned left 15.0 degree(s)."
+    assert executor.robot_state.heading == 15.0
+
+
+def test_turn_right_updates_heading():
+    executor = create_executor()
+
+    action = Action(
+        action_type=ActionType.TURN_RIGHT,
+        value=15.0,
+    )
+
+    result = executor.execute(action)
+
+    assert result.success is True
+    assert result.message == "Turned right 15.0 degree(s)."
+    assert executor.robot_state.heading == 345.0
+
+
+def test_turn_left_wraps_heading():
+    executor = create_executor()
+
+    executor.robot_state.heading = 350.0
+
+    action = Action(
+        action_type=ActionType.TURN_LEFT,
+        value=15.0,
+    )
+
+    result = executor.execute(action)
+
+    assert result.success is True
+    assert executor.robot_state.heading == 5.0
+
+
+def test_turn_right_wraps_heading():
+    executor = create_executor()
+
+    executor.robot_state.heading = 5.0
+
+    action = Action(
+        action_type=ActionType.TURN_RIGHT,
+        value=15.0,
+    )
+
+    result = executor.execute(action)
+
+    assert result.success is True
+    assert executor.robot_state.heading == 350.0
