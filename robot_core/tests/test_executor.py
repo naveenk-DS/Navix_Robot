@@ -2,14 +2,15 @@ from robot_core.actions import Action, ActionType
 from robot_core.executor import ActionExecutor
 from robot_core.motion import SimulatedMotionController
 from robot_core.safety import SafetyChecker
+from robot_core.state import RobotState
 
 
 def create_executor() -> ActionExecutor:
     return ActionExecutor(
         safety_checker=SafetyChecker(),
         motion_controller=SimulatedMotionController(),
+        robot_state=RobotState(),
     )
-
 
 def test_move_forward_execution(capsys):
     executor = create_executor()
@@ -72,3 +73,45 @@ def test_unsafe_large_move_does_not_reach_motion():
     assert result.message == (
         "Move distance exceeds the safety limit of 2.0 meters."
     )
+
+def test_move_updates_robot_state():
+    executor = create_executor()
+
+    action = Action(
+        action_type=ActionType.MOVE_FORWARD,
+        value=1.0,
+    )
+
+    result = executor.execute(action)
+
+    assert result.success is True
+    assert executor.robot_state.status.value == "moving"
+    assert executor.robot_state.position_x == 1.0
+
+
+def test_stop_updates_robot_state():
+    executor = create_executor()
+
+    action = Action(
+        action_type=ActionType.STOP,
+    )
+
+    result = executor.execute(action)
+
+    assert result.success is True
+    assert executor.robot_state.status.value == "stopped"
+
+
+def test_unsafe_move_does_not_update_robot_state():
+    executor = create_executor()
+
+    action = Action(
+        action_type=ActionType.MOVE_FORWARD,
+        value=3.0,
+    )
+
+    result = executor.execute(action)
+
+    assert result.success is False
+    assert executor.robot_state.status.value == "idle"
+    assert executor.robot_state.position_x == 0.0

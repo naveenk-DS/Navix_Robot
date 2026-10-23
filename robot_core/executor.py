@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from robot_core.actions import Action, ActionType
 from robot_core.motion import MotionController
 from robot_core.safety import SafetyChecker
+from robot_core.state import RobotState, RobotStatus
 
 
 @dataclass
@@ -16,9 +17,11 @@ class ActionExecutor:
         self,
         safety_checker: SafetyChecker,
         motion_controller: MotionController,
+        robot_state: RobotState,
     ) -> None:
         self.safety_checker = safety_checker
         self.motion_controller = motion_controller
+        self.robot_state = robot_state
 
     def execute(self, action: Action) -> ExecutionResult:
         allowed, safety_message = self.safety_checker.validate(action)
@@ -32,6 +35,9 @@ class ActionExecutor:
         if action.action_type == ActionType.MOVE_FORWARD:
             self.motion_controller.move_forward(action.value)
 
+            self.robot_state.status = RobotStatus.MOVING
+            self.robot_state.position_x += action.value
+
             return ExecutionResult(
                 success=True,
                 message=f"Moving forward {action.value} meter(s).",
@@ -39,6 +45,8 @@ class ActionExecutor:
 
         if action.action_type == ActionType.STOP:
             self.motion_controller.stop()
+
+            self.robot_state.status = RobotStatus.STOPPED
 
             return ExecutionResult(
                 success=True,
