@@ -1,0 +1,14 @@
+
+from dataclasses import dataclass
+from enum import Enum
+
+
+class ActionType(Enum):
+    MOVE_FORWARD = "move_forward"
+    STOP = "stop"
+
+
+@dataclass
+class Action:
+    action_type: ActionType
+    value: float = 0.0
