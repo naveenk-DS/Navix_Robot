@@ -1,5 +1,6 @@
 import math
 
+from navigation.target import NavigationTarget
 from robot_core.actions import Action, ActionType
 from robot_core.executor import ActionExecutor
 
@@ -62,7 +63,9 @@ class Navigator:
 
         current_heading = self.executor.robot_state.heading
 
-        turn_angle = (target_angle - current_heading + 180) % 360 - 180
+        turn_angle = (
+            target_angle - current_heading + 180
+        ) % 360 - 180
 
         if abs(turn_angle) > 1.0:
             if turn_angle > 0:
@@ -96,3 +99,12 @@ class Navigator:
         result = self.executor.execute(action)
 
         return result.message
+
+    def navigate_to_target(
+        self,
+        target: NavigationTarget,
+    ) -> str:
+        return self.navigate_to(
+            target_x=target.x,
+            target_y=target.y,
+        )

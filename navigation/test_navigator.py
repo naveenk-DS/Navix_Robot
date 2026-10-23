@@ -4,6 +4,7 @@ from robot_core.safety import SafetyChecker
 from robot_core.state import RobotState
 
 from navigation.navigator import Navigator
+from navigation.target import NavigationTarget
 
 
 def create_navigator() -> Navigator:
@@ -72,3 +73,39 @@ def test_navigate_to_target():
     assert round(state.position_x, 2) == 1.0
     assert round(state.position_y, 2) == 0.0
     assert state.heading == 0.0
+
+def test_navigation_target():
+    target = NavigationTarget(
+        x=3.0,
+        y=2.0,
+    )
+
+    assert target.x == 3.0
+    assert target.y == 2.0
+
+
+def test_navigation_target():
+    target = NavigationTarget(
+        x=3.0,
+        y=2.0,
+    )
+
+    assert target.x == 3.0
+    assert target.y == 2.0
+
+
+def test_navigate_to_target_object():
+    navigator = create_navigator()
+
+    target = NavigationTarget(
+        x=1.0,
+        y=0.0,
+    )
+
+    message = navigator.navigate_to_target(target)
+
+    state = navigator.executor.robot_state
+
+    assert message == "Moving forward 1.0 meter(s)."
+    assert round(state.position_x, 2) == 1.0
+    assert round(state.position_y, 2) == 0.0
