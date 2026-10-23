@@ -2,6 +2,9 @@ import math
 
 import pygame
 
+from navigation.controller import NavigationController
+from navigation.navigator import Navigator
+from navigation.target import NavigationTarget
 from robot_core.actions import Action, ActionType
 from robot_core.executor import ActionExecutor
 from robot_core.motion import SimulatedMotionController
@@ -18,6 +21,7 @@ GRID_SIZE = 1.0
 BACKGROUND = (25, 25, 25)
 GRID_COLOR = (55, 55, 55)
 ROBOT_COLOR = (80, 200, 120)
+TARGET_COLOR = (220, 80, 80)
 TEXT_COLOR = (230, 230, 230)
 
 
@@ -61,6 +65,40 @@ def draw_grid(screen: pygame.Surface) -> None:
         (100, 100, 100),
         (0, center_y),
         (WIDTH, center_y),
+        2,
+    )
+
+
+def draw_target(
+    screen: pygame.Surface,
+    target: NavigationTarget,
+) -> None:
+    x, y = world_to_screen(
+        target.x,
+        target.y,
+    )
+
+    pygame.draw.circle(
+        screen,
+        TARGET_COLOR,
+        (x, y),
+        10,
+        3,
+    )
+
+    pygame.draw.line(
+        screen,
+        TARGET_COLOR,
+        (x - 15, y),
+        (x + 15, y),
+        2,
+    )
+
+    pygame.draw.line(
+        screen,
+        TARGET_COLOR,
+        (x, y - 15),
+        (x, y + 15),
         2,
     )
 
@@ -114,8 +152,16 @@ def draw_robot(
 def draw_hud(
     screen: pygame.Surface,
     state: RobotState,
+    target: NavigationTarget,
+    navigation_running: bool,
     font: pygame.font.Font,
 ) -> None:
+    navigation_status = (
+        "RUNNING"
+        if navigation_running
+        else "IDLE"
+    )
+
     lines = [
         "NAVIX 2D SIMULATOR",
         "",
@@ -124,10 +170,14 @@ def draw_hud(
         f"Y      : {state.position_y:.2f} m",
         f"Heading: {state.heading:.1f}°",
         "",
+        f"Target : ({target.x:.1f}, {target.y:.1f})",
+        f"Navigation: {navigation_status}",
+        "",
         "W / UP    Move forward",
         "A / LEFT  Turn left",
         "D / RIGHT Turn right",
         "SPACE     Stop",
+        "N         Navigate to target",
         "R         Reset",
         "ESC       Exit",
     ]
@@ -140,15 +190,7 @@ def draw_hud(
         y += 25
 
 
-def main() -> None:
-    pygame.init()
-
-    screen = pygame.display.set_mode((WIDTH, HEIGHT))
-    pygame.display.set_caption("NAVIX Robot - 2D Simulator")
-
-    clock = pygame.time.Clock()
-    font = pygame.font.Font(None, 28)
-
+def create_robot() -> tuple[RobotState, ActionExecutor]:
     robot_state = RobotState()
 
     executor = ActionExecutor(
@@ -157,10 +199,43 @@ def main() -> None:
         robot_state=robot_state,
     )
 
+    return robot_state, executor
+
+
+def main() -> None:
+    pygame.init()
+
+    screen = pygame.display.set_mode(
+        (WIDTH, HEIGHT)
+    )
+
+    pygame.display.set_caption(
+        "NAVIX Robot - 2D Simulator"
+    )
+
+    clock = pygame.time.Clock()
+    font = pygame.font.Font(None, 28)
+
+    robot_state, executor = create_robot()
+
+    navigator = Navigator(executor)
+
+    navigation_controller = NavigationController(
+        navigator
+    )
+
+    target = NavigationTarget(
+        x=3.0,
+        y=2.0,
+    )
+
+    navigation_running = False
+
     running = True
 
     while running:
         for event in pygame.event.get():
+
             if event.type == pygame.QUIT:
                 running = False
 
@@ -200,24 +275,56 @@ def main() -> None:
 
                     executor.execute(action)
 
-                elif event.key == pygame.K_r:
-                    robot_state = RobotState()
+                    navigation_running = False
 
-                    executor = ActionExecutor(
-                        safety_checker=SafetyChecker(),
-                        motion_controller=SimulatedMotionController(),
-                        robot_state=robot_state,
+                elif event.key == pygame.K_n:
+                    navigation_running = True
+
+                elif event.key == pygame.K_r:
+                    robot_state, executor = create_robot()
+
+                    navigator = Navigator(executor)
+
+                    navigation_controller = NavigationController(
+                        navigator
                     )
+
+                    navigation_running = False
+
+        if navigation_running:
+            message = navigation_controller.navigate_to(
+                target=target,
+                max_steps=1,
+            )
+
+            if message == "Target reached.":
+                navigation_running = False
 
         screen.fill(BACKGROUND)
 
         draw_grid(screen)
-        draw_robot(screen, robot_state)
-        draw_hud(screen, robot_state, font)
+
+        draw_target(
+            screen,
+            target,
+        )
+
+        draw_robot(
+            screen,
+            robot_state,
+        )
+
+        draw_hud(
+            screen,
+            robot_state,
+            target,
+            navigation_running,
+            font,
+        )
 
         pygame.display.flip()
 
-        clock.tick(60)
+        clock.tick(10)
 
     pygame.quit()
 
