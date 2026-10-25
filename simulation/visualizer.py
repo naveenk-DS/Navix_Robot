@@ -6,6 +6,8 @@ from navigation.controller import NavigationController
 from navigation.navigator import Navigator
 from navigation.target import NavigationTarget
 from robot_core.actions import Action, ActionType
+from robot_core.command_executor import CommandExecutor
+from robot_core.command_parser import CommandParser
 from robot_core.executor import ActionExecutor
 from robot_core.motion import SimulatedMotionController
 from robot_core.safety import SafetyChecker
@@ -154,6 +156,9 @@ def draw_hud(
     state: RobotState,
     target: NavigationTarget,
     navigation_running: bool,
+    command_input: str,
+    command_message: str,
+    typing_command: bool,
     font: pygame.font.Font,
 ) -> None:
     navigation_status = (
@@ -161,6 +166,11 @@ def draw_hud(
         if navigation_running
         else "IDLE"
     )
+
+    if typing_command:
+        command_status = f"Command: {command_input}_"
+    else:
+        command_status = "Command: Press C to type"
 
     lines = [
         "NAVIX 2D SIMULATOR",
@@ -173,10 +183,14 @@ def draw_hud(
         f"Target : ({target.x:.1f}, {target.y:.1f})",
         f"Navigation: {navigation_status}",
         "",
+        command_status,
+        f"Result : {command_message}",
+        "",
         "W / UP    Move forward",
         "A / LEFT  Turn left",
         "D / RIGHT Turn right",
         "SPACE     Stop",
+        "C         Type command",
         "N         Navigate to target",
         "R         Reset",
         "ESC       Exit",
@@ -202,6 +216,27 @@ def create_robot() -> tuple[RobotState, ActionExecutor]:
     return robot_state, executor
 
 
+def create_command_system(
+    executor: ActionExecutor,
+) -> tuple[Navigator, NavigationController, CommandExecutor]:
+    navigator = Navigator(executor)
+
+    navigation_controller = NavigationController(
+        navigator
+    )
+
+    command_executor = CommandExecutor(
+        action_executor=executor,
+        navigation_controller=navigation_controller,
+    )
+
+    return (
+        navigator,
+        navigation_controller,
+        command_executor,
+    )
+
+
 def main() -> None:
     pygame.init()
 
@@ -218,11 +253,13 @@ def main() -> None:
 
     robot_state, executor = create_robot()
 
-    navigator = Navigator(executor)
+    (
+        navigator,
+        navigation_controller,
+        command_executor,
+    ) = create_command_system(executor)
 
-    navigation_controller = NavigationController(
-        navigator
-    )
+    command_parser = CommandParser()
 
     target = NavigationTarget(
         x=3.0,
@@ -230,6 +267,10 @@ def main() -> None:
     )
 
     navigation_running = False
+
+    command_input = ""
+    command_message = ""
+    typing_command = False
 
     running = True
 
@@ -239,57 +280,97 @@ def main() -> None:
             if event.type == pygame.QUIT:
                 running = False
 
-            if event.type == pygame.KEYDOWN:
+            elif event.type == pygame.KEYDOWN:
 
-                if event.key == pygame.K_ESCAPE:
-                    running = False
+                # Command typing mode
+                if typing_command:
 
-                elif event.key == pygame.K_w or event.key == pygame.K_UP:
-                    action = Action(
-                        action_type=ActionType.MOVE_FORWARD,
-                        value=0.1,
-                    )
+                    if event.key == pygame.K_RETURN:
+                        try:
+                            command = command_parser.parse(
+                                command_input
+                            )
 
-                    executor.execute(action)
+                            command_message = command_executor.execute(
+                                command
+                            )
 
-                elif event.key == pygame.K_a or event.key == pygame.K_LEFT:
-                    action = Action(
-                        action_type=ActionType.TURN_LEFT,
-                        value=15.0,
-                    )
+                        except ValueError as error:
+                            command_message = str(error)
 
-                    executor.execute(action)
+                        command_input = ""
+                        typing_command = False
 
-                elif event.key == pygame.K_d or event.key == pygame.K_RIGHT:
-                    action = Action(
-                        action_type=ActionType.TURN_RIGHT,
-                        value=15.0,
-                    )
+                    elif event.key == pygame.K_BACKSPACE:
+                        command_input = command_input[:-1]
 
-                    executor.execute(action)
+                    elif event.key == pygame.K_ESCAPE:
+                        command_input = ""
+                        typing_command = False
 
-                elif event.key == pygame.K_SPACE:
-                    action = Action(
-                        action_type=ActionType.STOP,
-                    )
+                    elif event.unicode.isprintable():
+                        command_input += event.unicode
 
-                    executor.execute(action)
+                # Normal simulator controls
+                else:
 
-                    navigation_running = False
+                    if event.key == pygame.K_ESCAPE:
+                        running = False
 
-                elif event.key == pygame.K_n:
-                    navigation_running = True
+                    elif event.key == pygame.K_c:
+                        typing_command = True
+                        command_input = ""
+                        command_message = ""
 
-                elif event.key == pygame.K_r:
-                    robot_state, executor = create_robot()
+                    elif event.key == pygame.K_w or event.key == pygame.K_UP:
+                        action = Action(
+                            action_type=ActionType.MOVE_FORWARD,
+                            value=0.1,
+                        )
 
-                    navigator = Navigator(executor)
+                        executor.execute(action)
 
-                    navigation_controller = NavigationController(
-                        navigator
-                    )
+                    elif event.key == pygame.K_a or event.key == pygame.K_LEFT:
+                        action = Action(
+                            action_type=ActionType.TURN_LEFT,
+                            value=15.0,
+                        )
 
-                    navigation_running = False
+                        executor.execute(action)
+
+                    elif event.key == pygame.K_d or event.key == pygame.K_RIGHT:
+                        action = Action(
+                            action_type=ActionType.TURN_RIGHT,
+                            value=15.0,
+                        )
+
+                        executor.execute(action)
+
+                    elif event.key == pygame.K_SPACE:
+                        action = Action(
+                            action_type=ActionType.STOP,
+                        )
+
+                        executor.execute(action)
+
+                        navigation_running = False
+
+                    elif event.key == pygame.K_n:
+                        navigation_running = True
+
+                    elif event.key == pygame.K_r:
+                        robot_state, executor = create_robot()
+
+                        (
+                            navigator,
+                            navigation_controller,
+                            command_executor,
+                        ) = create_command_system(executor)
+
+                        navigation_running = False
+                        command_input = ""
+                        command_message = ""
+                        typing_command = False
 
         if navigation_running:
             message = navigation_controller.navigate_to(
@@ -319,6 +400,9 @@ def main() -> None:
             robot_state,
             target,
             navigation_running,
+            command_input,
+            command_message,
+            typing_command,
             font,
         )
 
