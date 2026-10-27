@@ -5,15 +5,18 @@ from robot_core.command import CommandType, RobotCommand
 
 class CommandParser:
     def parse(self, text: str) -> RobotCommand:
-        command = text.strip().lower()
+        command = self._normalize(text)
 
+        # STOP
         if command == "stop":
             return RobotCommand(
                 command_type=CommandType.STOP,
             )
 
+        # MOVE FORWARD
         match = re.fullmatch(
-            r"forward\s+([0-9]+(?:\.[0-9]+)?)",
+            r"(?:move\s+)?forward\s+([0-9]+(?:\.[0-9]+)?)"
+            r"(?:\s+meters?)?",
             command,
         )
 
@@ -23,8 +26,10 @@ class CommandParser:
                 value=float(match.group(1)),
             )
 
+        # TURN LEFT
         match = re.fullmatch(
-            r"turn\s+left\s+([0-9]+(?:\.[0-9]+)?)",
+            r"turn\s+left\s+([0-9]+(?:\.[0-9]+)?)"
+            r"(?:\s+degrees?)?",
             command,
         )
 
@@ -34,8 +39,10 @@ class CommandParser:
                 value=float(match.group(1)),
             )
 
+        # TURN RIGHT
         match = re.fullmatch(
-            r"turn\s+right\s+([0-9]+(?:\.[0-9]+)?)",
+            r"turn\s+right\s+([0-9]+(?:\.[0-9]+)?)"
+            r"(?:\s+degrees?)?",
             command,
         )
 
@@ -45,8 +52,10 @@ class CommandParser:
                 value=float(match.group(1)),
             )
 
+        # NAVIGATE TO X Y
         match = re.fullmatch(
-            r"go\s+([0-9]+(?:\.[0-9]+)?)\s+([0-9]+(?:\.[0-9]+)?)",
+            r"go\s+([0-9]+(?:\.[0-9]+)?)"
+            r"\s+([0-9]+(?:\.[0-9]+)?)",
             command,
         )
 
@@ -60,3 +69,17 @@ class CommandParser:
         raise ValueError(
             f"Unsupported command: {text}"
         )
+
+    def _normalize(self, text: str) -> str:
+        command = text.strip().lower()
+
+        # Remove punctuation.
+        command = re.sub(r"[,!?]", "", command)
+
+        # Remove the NAVIX wake word/name.
+        command = re.sub(r"^\s*navix[\s,:-]*", "", command)
+
+        # Normalize multiple spaces.
+        command = re.sub(r"\s+", " ", command)
+
+        return command.strip()
