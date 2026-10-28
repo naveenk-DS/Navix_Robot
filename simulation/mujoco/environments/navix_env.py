@@ -88,7 +88,7 @@ class NavixEnv(gym.Env):
         reward += 2.0 * float(np.exp(-20.0 * (1.0 - min(height / self.stand_height, 1.0)) ** 2))
         reward -= 0.01 * float(np.sum(np.square(action)))
         reward -= 3.0 * float(np.mean(np.square(self.data.qpos[7:])))  # stay near straight legs
-        reward -= 0.05 * float(np.linalg.norm(self.data.qvel[:2]))
+        reward -= 0.5 * float(np.linalg.norm(self.data.qvel[:2]))
         if fallen:
             reward -= 5.0
 
