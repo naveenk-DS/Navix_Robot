@@ -1,18 +1,8 @@
-import pyaudio
-import wave
-
 import os
 import sys
+import wave
 
-# Inside your record function, add this right before 'p = pyaudio.PyAudio()':
-# This hides the messy ALSA driver outputs
-stderr = sys.stderr
-sys.stderr = open(os.devnull, 'w')
-
-p = pyaudio.PyAudio()
-
-# Restore standard error output immediately after PyAudio starts up
-sys.stderr = stderr
+import pyaudio
 
 
 class MicrophoneRecorder:
@@ -21,35 +11,37 @@ class MicrophoneRecorder:
         self.rate = rate
         self.chunk = chunk
 
-    # Change "output_filepath" to "output_path"
     def record(self, output_path, duration=4):
-        p = pyaudio.PyAudio()
-        
+        # Silence noisy ALSA messages only while PyAudio starts up
+        saved_stderr = sys.stderr
+        sys.stderr = open(os.devnull, "w")
+        try:
+            p = pyaudio.PyAudio()
+        finally:
+            sys.stderr.close()
+            sys.stderr = saved_stderr
+
+        sample_width = p.get_sample_size(pyaudio.paInt16)
         stream = p.open(
             format=pyaudio.paInt16,
             channels=self.channels,
             rate=self.rate,
             input=True,
-            frames_per_buffer=self.chunk
+            frames_per_buffer=self.chunk,
         )
 
         frames = []
-
-        for _ in range(0, int(self.rate / self.chunk * duration)):
-            data = stream.read(self.chunk, exception_on_overflow=False)
-            frames.append(data)
+        for _ in range(int(self.rate / self.chunk * duration)):
+            frames.append(stream.read(self.chunk, exception_on_overflow=False))
 
         stream.stop_stream()
         stream.close()
         p.terminate()
 
-        # Update this line to use output_path as well
-        wf = wave.open(output_path, 'wb')
-        wf.setnchannels(self.channels)
-        wf.setsampwidth(p.get_sample_size(pyaudio.paInt16))
-        wf.setframerate(self.rate)
-        wf.writeframes(b''.join(frames))
-        wf.close()
-        
-        return output_path
+        with wave.open(output_path, "wb") as wf:
+            wf.setnchannels(self.channels)
+            wf.setsampwidth(sample_width)
+            wf.setframerate(self.rate)
+            wf.writeframes(b"".join(frames))
 
+        return output_path

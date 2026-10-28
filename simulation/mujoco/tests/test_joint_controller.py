@@ -8,7 +8,7 @@ from simulation.mujoco.joint_controller import (
 
 
 MODEL_PATH = (
-    Path(__file__).resolve().parent
+    Path(__file__).resolve().parent.parent
     / "models"
     / "navix_robot.xml"
 )
