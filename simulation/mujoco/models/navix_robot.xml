@@ -1,0 +1,331 @@
+<mujoco model="navix_robot">
+
+    <compiler angle="radian" autolimits="true"/>
+
+    <option
+        gravity="0 0 -9.81"
+        timestep="0.002"
+    />
+
+    <default>
+
+        <joint
+            damping="0.5"
+            armature="0.01"
+        />
+
+        <geom
+            friction="1 0.5 0.5"
+            density="1000"
+        />
+
+        <motor
+            ctrllimited="true"
+            ctrlrange="-1 1"
+        />
+
+    </default>
+
+    <worldbody>
+
+        <!-- Ground -->
+        <geom
+            name="ground"
+            type="plane"
+            size="5 5 0.1"
+            pos="0 0 0"
+        />
+
+        <!-- Main robot body -->
+        <body
+            name="torso"
+            pos="0 0 1.2"
+        >
+
+            <freejoint/>
+
+            <geom
+                name="torso_geom"
+                type="box"
+                size="0.25 0.18 0.3"
+            />
+
+            <!-- IMU reference point -->
+            <site
+                name="imu_site"
+                pos="0 0 0"
+                size="0.02"
+            />
+
+            <!-- ================= LEFT LEG ================= -->
+
+            <body
+                name="left_leg"
+                pos="-0.15 0 -0.3"
+            >
+
+                <!-- Left hip -->
+                <joint
+                    name="left_hip"
+                    type="hinge"
+                    axis="0 1 0"
+                    range="-1.0 1.0"
+                />
+
+                <geom
+                    name="left_upper_leg"
+                    type="capsule"
+                    fromto="0 0 0 0 0 -0.35"
+                    size="0.07"
+                />
+
+                <!-- Left lower leg -->
+                <body
+                    name="left_lower_leg"
+                    pos="0 0 -0.35"
+                >
+
+                    <!-- Left knee -->
+                    <joint
+                        name="left_knee"
+                        type="hinge"
+                        axis="0 1 0"
+                        range="-1.5 0.2"
+                    />
+
+                    <geom
+                        name="left_lower_leg_geom"
+                        type="capsule"
+                        fromto="0 0 0 0 0 -0.35"
+                        size="0.06"
+                    />
+
+                    <!-- Left foot / ankle -->
+                    <body
+                        name="left_foot"
+                        pos="0 0 -0.35"
+                    >
+
+                        <!-- Left ankle -->
+                        <joint
+                            name="left_ankle"
+                            type="hinge"
+                            axis="0 1 0"
+                            range="-0.8 0.8"
+                        />
+
+                        <geom
+                            name="left_foot_geom"
+                            type="box"
+                            size="0.12 0.08 0.04"
+                            pos="0.05 0 -0.04"
+                        />
+
+                    </body>
+
+                </body>
+
+            </body>
+
+            <!-- ================= RIGHT LEG ================= -->
+
+            <body
+                name="right_leg"
+                pos="0.15 0 -0.3"
+            >
+
+                <!-- Right hip -->
+                <joint
+                    name="right_hip"
+                    type="hinge"
+                    axis="0 1 0"
+                    range="-1.0 1.0"
+                />
+
+                <geom
+                    name="right_upper_leg"
+                    type="capsule"
+                    fromto="0 0 0 0 0 -0.35"
+                    size="0.07"
+                />
+
+                <!-- Right lower leg -->
+                <body
+                    name="right_lower_leg"
+                    pos="0 0 -0.35"
+                >
+
+                    <!-- Right knee -->
+                    <joint
+                        name="right_knee"
+                        type="hinge"
+                        axis="0 1 0"
+                        range="-1.5 0.2"
+                    />
+
+                    <geom
+                        name="right_lower_leg_geom"
+                        type="capsule"
+                        fromto="0 0 0 0 0 -0.35"
+                        size="0.06"
+                    />
+
+                    <!-- Right foot / ankle -->
+                    <body
+                        name="right_foot"
+                        pos="0 0 -0.35"
+                    >
+
+                        <!-- Right ankle -->
+                        <joint
+                            name="right_ankle"
+                            type="hinge"
+                            axis="0 1 0"
+                            range="-0.8 0.8"
+                        />
+
+                        <geom
+                            name="right_foot_geom"
+                            type="box"
+                            size="0.12 0.08 0.04"
+                            pos="0.05 0 -0.04"
+                        />
+
+                    </body>
+
+                </body>
+
+            </body>
+
+        </body>
+
+    </worldbody>
+
+    <!-- ================= SENSORS ================= -->
+
+    <sensor>
+
+        <!-- Joint positions -->
+        <jointpos
+            name="left_hip_position"
+            joint="left_hip"
+        />
+
+        <jointpos
+            name="left_knee_position"
+            joint="left_knee"
+        />
+
+        <jointpos
+            name="left_ankle_position"
+            joint="left_ankle"
+        />
+
+        <jointpos
+            name="right_hip_position"
+            joint="right_hip"
+        />
+
+        <jointpos
+            name="right_knee_position"
+            joint="right_knee"
+        />
+
+        <jointpos
+            name="right_ankle_position"
+            joint="right_ankle"
+        />
+
+        <!-- Joint velocities -->
+        <jointvel
+            name="left_hip_velocity"
+            joint="left_hip"
+        />
+
+        <jointvel
+            name="left_knee_velocity"
+            joint="left_knee"
+        />
+
+        <jointvel
+            name="left_ankle_velocity"
+            joint="left_ankle"
+        />
+
+        <jointvel
+            name="right_hip_velocity"
+            joint="right_hip"
+        />
+
+        <jointvel
+            name="right_knee_velocity"
+            joint="right_knee"
+        />
+
+        <jointvel
+            name="right_ankle_velocity"
+            joint="right_ankle"
+        />
+
+        <!-- IMU -->
+        <framequat
+            name="torso_orientation"
+            objtype="site"
+            objname="imu_site"
+        />
+
+        <gyro
+            name="torso_gyro"
+            site="imu_site"
+        />
+
+        <accelerometer
+            name="torso_acceleration"
+            site="imu_site"
+        />
+
+    </sensor>
+
+    <!-- ================= ACTUATORS ================= -->
+
+    <actuator>
+
+        <motor
+            name="left_hip_motor"
+            joint="left_hip"
+            gear="50"
+        />
+
+        <motor
+            name="left_knee_motor"
+            joint="left_knee"
+            gear="50"
+        />
+
+        <motor
+            name="left_ankle_motor"
+            joint="left_ankle"
+            gear="50"
+        />
+
+        <motor
+            name="right_hip_motor"
+            joint="right_hip"
+            gear="50"
+        />
+
+        <motor
+            name="right_knee_motor"
+            joint="right_knee"
+            gear="50"
+        />
+
+        <motor
+            name="right_ankle_motor"
+            joint="right_ankle"
+            gear="50"
+        />
+
+    </actuator>
+
+</mujoco>
