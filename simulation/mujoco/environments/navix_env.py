@@ -16,9 +16,12 @@ class NavixEnv(gym.Env):
     metadata = {"render_modes": []}
 
     def __init__(self, frame_skip=10, max_steps=500,
-                 min_height=0.6, min_upright=0.7):
+                 min_height=0.6, min_upright=0.7,
+                 model_path=None, start_height=1.1, stand_height=1.1):
         super().__init__()
-        self.model = mujoco.MjModel.from_xml_path(str(MODEL_PATH))
+        self.start_height = start_height
+        self.stand_height = stand_height
+        self.model = mujoco.MjModel.from_xml_path(str(model_path or MODEL_PATH))
         self.data = mujoco.MjData(self.model)
 
         self.frame_skip = frame_skip
@@ -64,7 +67,7 @@ class NavixEnv(gym.Env):
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
         mujoco.mj_resetData(self.model, self.data)
-        self.data.qpos[2] = 1.1  # feet start just above the ground
+        self.data.qpos[2] = self.start_height
         self.data.qpos[7:] += self.np_random.uniform(-0.02, 0.02, size=self.model.nq - 7)
         mujoco.mj_forward(self.model, self.data)
         self.steps = 0
@@ -82,7 +85,9 @@ class NavixEnv(gym.Env):
 
         # Reward: alive bonus + uprightness - small energy / motion penalties
         reward = 1.0 + 1.0 * upright
+        reward += 2.0 * float(np.exp(-20.0 * (1.0 - min(height / self.stand_height, 1.0)) ** 2))
         reward -= 0.01 * float(np.sum(np.square(action)))
+        reward -= 3.0 * float(np.mean(np.square(self.data.qpos[7:])))  # stay near straight legs
         reward -= 0.05 * float(np.linalg.norm(self.data.qvel[:2]))
         if fallen:
             reward -= 5.0
@@ -90,3 +95,11 @@ class NavixEnv(gym.Env):
         truncated = self.steps >= self.max_steps
         info = {"height": height, "upright": upright}
         return self._obs(), reward, fallen, truncated, info
+
+
+SMALL_MODEL = Path(__file__).resolve().parents[1] / "models" / "navix_robot_small.xml"
+
+
+def make_small_env(**kw):
+    return NavixEnv(model_path=SMALL_MODEL, start_height=0.215,
+                    stand_height=0.21, min_height=0.12, **kw)

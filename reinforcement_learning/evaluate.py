@@ -4,12 +4,12 @@ import argparse
 import numpy as np
 from stable_baselines3 import PPO
 
-from simulation.mujoco.environments.navix_env import NavixEnv
+from simulation.mujoco.environments.navix_env import NavixEnv, make_small_env
 
 
-def evaluate(path, episodes=20, push=0.0):
+def evaluate(path, episodes=20, push=0.0, small=False):
     model = PPO.load(path, device="cpu")
-    env = NavixEnv(max_steps=500)
+    env = make_small_env(max_steps=500) if small else NavixEnv(max_steps=500)
     lengths, heights, drifts = [], [], []
     for ep in range(episodes):
         obs, _ = env.reset(seed=ep)
@@ -35,6 +35,7 @@ def evaluate(path, episodes=20, push=0.0):
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("path", nargs="?", default="runs/navix_ppo")
+    ap.add_argument("--small", action="store_true")
     ap.add_argument("--push", type=float, default=0.0)
     a = ap.parse_args()
-    evaluate(a.path, push=a.push)
+    evaluate(a.path, push=a.push, small=a.small)
